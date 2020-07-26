@@ -11,7 +11,7 @@ Things to do:
 * Implement event loop and poll version.
 """
 
-import __builtin__
+import builtins
 import sys
 import time
 import traceback
@@ -43,12 +43,12 @@ class OutStream(object):
 
     def flush(self):
         if self.pub_socket is None:
-            raise ValueError(u'I/O operation on closed file')
+            raise ValueError('I/O operation on closed file')
         else:
             if self._buffer:
                 data = ''.join(self._buffer)
-                content = {u'name':self.name, u'data':data}
-                msg = self.session.msg(u'stream', content=content,
+                content = {'name':self.name, 'data':data}
+                msg = self.session.msg('stream', content=content,
                                        parent=self.parent_header)
                 print>>sys.__stdout__, Message(msg)
                 self.pub_socket.send_json(msg)
@@ -99,8 +99,8 @@ class DisplayHook(object):
         if obj is None:
             return
 
-        __builtin__._ = obj
-        msg = self.session.msg(u'pyout', {u'data':repr(obj)},
+        builtins._ = obj
+        msg = self.session.msg('pyout', {'data':repr(obj)},
                                parent=self.parent_header)
         self.pub_socket.send_json(msg)
 
@@ -115,19 +115,19 @@ class RawInput(object):
         self.socket = socket
 
     def __call__(self, prompt=None):
-        msg = self.session.msg(u'raw_input')
+        msg = self.session.msg('raw_input')
         self.socket.send_json(msg)
         while True:
             try:
-                reply = self.socket.recv_json(zmq.NOBLOCK)
-            except zmq.ZMQError, e:
+                reply = self.socket.recv_json(zmq.DONTWAIT)
+            except zmq.ZMQError as e:
                 if e.errno == zmq.EAGAIN:
                     pass
                 else:
                     raise
             else:
                 break
-        return reply[u'content'][u'data']
+        return reply['content']['data']
 
 
 class Kernel(object):
@@ -149,8 +149,8 @@ class Kernel(object):
     def abort_queue(self):
         while True:
             try:
-                ident = self.reply_socket.recv(zmq.NOBLOCK)
-            except zmq.ZMQError, e:
+                ident = self.reply_socket.recv(zmq.DONTWAIT)
+            except zmq.ZMQError as e:
                 if e.errno == zmq.EAGAIN:
                     break
             else:
@@ -170,37 +170,37 @@ class Kernel(object):
 
     def execute_request(self, ident, parent):
         try:
-            code = parent[u'content'][u'code']
+            code = parent['content']['code']
         except:
             print>>sys.__stderr__, "Got bad msg: "
             print>>sys.__stderr__, Message(parent)
             return
-        pyin_msg = self.session.msg(u'pyin',{u'code':code}, parent=parent)
+        pyin_msg = self.session.msg('pyin',{'code':code}, parent=parent)
         self.pub_socket.send_json(pyin_msg)
         try:
             comp_code = self.compiler(code, '<zmq-kernel>')
             sys.displayhook.set_parent(parent)
-            exec comp_code in self.user_ns, self.user_ns
+            exec(comp_code, self.user_ns, self.user_ns)
         except:
-            result = u'error'
+            result = 'error'
             etype, evalue, tb = sys.exc_info()
             tb = traceback.format_exception(etype, evalue, tb)
             exc_content = {
-                u'status' : u'error',
-                u'traceback' : tb,
-                u'etype' : unicode(etype),
-                u'evalue' : unicode(evalue)
+                'status' : 'error',
+                'traceback' : tb,
+                'etype' : str(etype),
+                'evalue' : str(evalue)
             }
-            exc_msg = self.session.msg(u'pyerr', exc_content, parent)
+            exc_msg = self.session.msg('pyerr', exc_content, parent)
             self.pub_socket.send_json(exc_msg)
             reply_content = exc_content
         else:
             reply_content = {'status' : 'ok'}
-        reply_msg = self.session.msg(u'execute_reply', reply_content, parent)
+        reply_msg = self.session.msg('execute_reply', reply_content, parent)
         print>>sys.__stdout__, Message(reply_msg)
         self.reply_socket.send(ident, zmq.SNDMORE)
         self.reply_socket.send_json(reply_msg)
-        if reply_msg['content']['status'] == u'error':
+        if reply_msg['content']['status'] == 'error':
             self.abort_queue()
 
     def complete_request(self, ident, parent):
@@ -239,7 +239,7 @@ def main():
     print >>sys.__stdout__, "Starting the kernel..."
     print >>sys.__stdout__, "On:",rep_conn, pub_conn
 
-    session = Session(username=u'kernel')
+    session = Session(username='kernel')
 
     reply_socket = c.socket(zmq.ROUTER)
     reply_socket.bind(rep_conn)
@@ -247,8 +247,8 @@ def main():
     pub_socket = c.socket(zmq.PUB)
     pub_socket.bind(pub_conn)
 
-    stdout = OutStream(session, pub_socket, u'stdout')
-    stderr = OutStream(session, pub_socket, u'stderr')
+    stdout = OutStream(session, pub_socket, 'stdout')
+    stderr = OutStream(session, pub_socket, 'stderr')
     sys.stdout = stdout
     sys.stderr = stderr
 

@@ -6,7 +6,6 @@
 # Imports
 #-----------------------------------------------------------------------------
 # stdlib
-import cPickle as pickle
 import code
 import readline
 import sys
@@ -55,16 +54,16 @@ class Console(code.InteractiveConsole):
             return
         c = omsg.content.code.rstrip()
         if c:
-            print '[IN from %s]' % omsg.parent_header.username
-            print c
+            print('[IN from %s]' % omsg.parent_header.username)
+            print(c)
 
     def handle_pyout(self, omsg):
         #print omsg # dbg
         if omsg.parent_header.session == self.session.session:
-            print "%s%s" % (sys.ps3, omsg.content.data)
+            print("%s%s" % (sys.ps3, omsg.content.data))
         else:
-            print '[Out from %s]' % omsg.parent_header.username
-            print omsg.content.data
+            print('[Out from %s]' % omsg.parent_header.username)
+            print(omsg.content.data)
 
     def print_pyerr(self, err):
         print >> sys.stderr, err.etype,':', err.evalue

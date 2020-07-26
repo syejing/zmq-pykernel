@@ -90,10 +90,10 @@ class Session(object):
         omsg = Message(msg)
         return omsg
 
-    def recv(self, socket, mode=zmq.NOBLOCK):
+    def recv(self, socket, mode=zmq.DONTWAIT):
         try:
             msg = socket.recv_json(mode)
-        except zmq.ZMQError, e:
+        except zmq.ZMQError as e:
             if e.errno == zmq.EAGAIN:
                 # We can convert EAGAIN to None as we know in this case
                 # recv_json won't return None.
